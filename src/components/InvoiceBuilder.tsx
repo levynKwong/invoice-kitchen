@@ -731,13 +731,15 @@ const InvoiceItemsTable: React.FC = () => {
                             inputMode="decimal"
                             value={
                               lineItem.price !== undefined && lineItem.quantity !== undefined
-                                ? ((lineItem.price || 0) * (lineItem.quantity || 0)).toFixed(2)
+                                ? ((lineItem.price || 0) * (lineItem.quantity || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                 : ''
                             }
                             onChange={(e) => {
                               const newLineItems = [...lineItems];
                               let qty = lineItem.quantity || 0;
-                              let val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                              // Remove commas before parsing
+                              let valStr = e.target.value.replace(/,/g, '');
+                              let val = valStr === '' ? undefined : parseFloat(valStr);
                               if (val !== undefined && !isNaN(val)) {
                                 if (qty > 0) {
                                   newLineItems[index].price = val / qty;
