@@ -305,7 +305,7 @@ const MainContent: React.FC = () => {
         <SubHeader />
         <InvoiceItemsTable />
 
-                <footer className="w-full flex justify-center   pt-8 pb-8 print:hidden" style={{ marginTop: '200px' }}>
+                <footer className="w-full flex justify-center   pt-8 pb-8 " style={{ marginTop: '200px' }}>
                     <div className="w-full max-w-4xl px-4">
                         <AdditionalNotes />
                     </div>
