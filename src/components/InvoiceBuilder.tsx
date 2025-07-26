@@ -727,24 +727,18 @@ const InvoiceItemsTable: React.FC = () => {
                           <Input
                             className="font-normal text-sm text-right"
                             placeholder="Amount"
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             value={
-                              lineItem.price !== undefined &&
-                              lineItem.quantity !== undefined
-                                ? String(
-                                    (lineItem.price || 0) *
-                                      (lineItem.quantity || 0),
-                                  )
+                              lineItem.price !== undefined && lineItem.quantity !== undefined
+                                ? ((lineItem.price || 0) * (lineItem.quantity || 0)).toFixed(2)
                                 : ''
                             }
                             onChange={(e) => {
                               const newLineItems = [...lineItems];
                               let qty = lineItem.quantity || 0;
-                              const val =
-                                e.target.value === ''
-                                  ? undefined
-                                  : Number(e.target.value);
-                              if (val !== undefined) {
+                              let val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                              if (val !== undefined && !isNaN(val)) {
                                 if (qty > 0) {
                                   newLineItems[index].price = val / qty;
                                 } else {
