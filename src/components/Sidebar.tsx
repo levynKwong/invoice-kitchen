@@ -1,5 +1,6 @@
 'use client';
 import { CurrencySelector } from './CurrencySelector';
+import { ColumnToggles } from './ColumnToggles';
 import {
   Accordion,
   AccordionContent,
@@ -53,6 +54,12 @@ export function Sidebar() {
             <AccordionTrigger>Logo</AccordionTrigger>
             <AccordionContent>
               <LogoSelector />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-3">
+            <AccordionTrigger>Columns</AccordionTrigger>
+            <AccordionContent>
+              <ColumnToggles />
             </AccordionContent>
           </AccordionItem>
         </Accordion>

@@ -6,7 +6,7 @@ import { makeAutoObservable } from 'mobx';
 import { AppState } from './types';
 import { SWIFTLY_ICON } from './lib/swiftlyIconBase64';
 
-const CURRENT_STATE_VERSION = '3';
+const CURRENT_STATE_VERSION = '5';
 
 function presetInvoice(): AppState {
   return {
@@ -64,6 +64,10 @@ function presetInvoice(): AppState {
         price: 100,
       },
     ],
+    showQuantity: true,
+    showPrice: true,
+    showSubtotal: true,
+    showTax: true,
   };
 }
 
@@ -103,6 +107,10 @@ function defaultInvoice(): AppState {
     notesFreeText: '',
 
     lineItems: [],
+    showQuantity: true,
+    showPrice: true,
+    showSubtotal: true,
+    showTax: true,
   };
 }
 
@@ -147,9 +155,17 @@ class AppStateStore {
   };
 
   formatAsCurrency = (value: number) => {
+    const currencyValue = this.state.currency.value;
+    
+    // Handle custom currency symbols that aren't ISO codes
+    if (currencyValue === 'Rs') {
+      return `Rs ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    
+    // Use standard Intl.NumberFormat for ISO currency codes
     return Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: this.state.currency.value,
+      currency: currencyValue,
     }).format(value);
   };
 
@@ -162,13 +178,31 @@ class AppStateStore {
       return parsedState;
     }
     if (Number(parsedState.version) < 3) {
-      return {
+      parsedState = {
         ...parsedState,
         taxEnabled: parsedState.taxRate !== null ? true : false,
-        version: CURRENT_STATE_VERSION,
+        version: '3',
       };
     }
-    return;
+    if (Number(parsedState.version) < 4) {
+      // Migrate MUR back to Rs for custom display
+      if (parsedState.currency?.value === 'MUR') {
+        parsedState.currency = {
+          name: 'Mauritian Rupee',
+          value: 'Rs',
+        };
+      }
+      parsedState.version = '4';
+    }
+    if (Number(parsedState.version) < 5) {
+      // Add toggle properties for showing/hiding columns
+      parsedState.showQuantity = parsedState.showQuantity ?? true;
+      parsedState.showPrice = parsedState.showPrice ?? true;
+      parsedState.showSubtotal = parsedState.showSubtotal ?? true;
+      parsedState.showTax = parsedState.showTax ?? true;
+      parsedState.version = CURRENT_STATE_VERSION;
+    }
+    return parsedState;
   };
 
   loadFromLocalStorage = () => {

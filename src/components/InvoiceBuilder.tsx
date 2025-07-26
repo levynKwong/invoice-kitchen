@@ -304,7 +304,12 @@ const MainContent: React.FC = () => {
         <div className="border-b border-gray-300" />
         <SubHeader />
         <InvoiceItemsTable />
-        <AdditionalNotes />
+
+                <footer className="w-full flex justify-center   pt-8 pb-8 print:hidden" style={{ marginTop: '200px' }}>
+                    <div className="w-full max-w-4xl px-4">
+                        <AdditionalNotes />
+                    </div>
+                </footer>
       </div>
     </div>
   );
@@ -396,7 +401,7 @@ const Chef: React.FC = () => {
 const Header: React.FC = () => {
   const { state, setState } = useAppStateStore();
   return (
-    <div className="grid grid-cols-5 gap-4">
+    <div className="grid grid-cols-5 gap-4  pt-4 ">
       {state.logo && (
         // <div className="col-span-1">
         //   <img
@@ -519,136 +524,245 @@ const InvoiceItemsTable: React.FC = () => {
   };
 
   const subtotal = lineItems.reduce(
-    (acc, lineItem) => acc + (lineItem.price || 0) * (lineItem.quantity || 0),
+    (acc, lineItem) =>
+      lineItem ? acc + (lineItem.price || 0) * (lineItem.quantity || 0) : acc,
     0,
   );
   const taxPercent = state.taxRate;
   const tax = state.taxEnabled ? subtotal * (taxPercent || 0) : 0;
   const total = subtotal + tax;
+
+  // Calculate dynamic column spans based on visible columns
+  const visibleColumns = [
+    true, // Item is always visible
+    state.showQuantity,
+    state.showPrice, // Price column
+    state.showPrice, // Cost column (only if price is shown)
+    true, // Amount is always visible
+  ].filter(Boolean);
+  const totalColumns = visibleColumns.length;
+  const itemColSpan =
+    totalColumns === 1 ? 8 : Math.max(1, 8 - (totalColumns - 1));
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div>
-        <div className="border-y border-gray-300 grid grid-cols-8 py-2">
-          <span className="col-span-5 uppercase tracking-wider font-semibold text-sm">
+        <div
+          className={`border-y border-gray-300 grid py-2`}
+          style={{
+            gridTemplateColumns: `${itemColSpan}fr${
+              state.showQuantity ? ' 1fr' : ''
+            }${state.showPrice ? ' 1fr' : ''}${
+              state.showPrice ? ' 1fr' : ''
+            } 1fr`,
+          }}
+        >
+          <span className="uppercase tracking-wider font-semibold text-sm">
             Item
           </span>
-          <span className="col-span-1 uppercase tracking-wider font-semibold text-sm">
-            Qty
-          </span>
-          <span className="col-span-1 uppercase tracking-wider font-semibold text-sm">
-            Price
-          </span>
-          <span className="col-span-1 uppercase tracking-wider font-semibold text-sm">
+          {state.showQuantity && (
+            <span className="uppercase tracking-wider font-semibold text-sm">
+              Qty
+            </span>
+          )}
+          {state.showPrice && (
+            <span className="uppercase tracking-wider font-semibold text-sm">
+              Price
+            </span>
+          )}
+          {state.showPrice && (
+            <span className="uppercase tracking-wider font-semibold text-sm text-right">
+              Cost
+            </span>
+          )}
+          <span className="uppercase tracking-wider font-semibold text-sm ">
             Amount
           </span>
         </div>
         <Droppable droppableId="invoice-items">
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef}>
-              {lineItems.map((lineItem, index) => (
-                <Draggable
-                  key={index}
-                  draggableId={`item-${index}`}
-                  index={index}
-                >
-                  {(provided2) => (
-                    <div
-                      ref={provided2.innerRef}
-                      {...provided2.draggableProps}
-                      key={index}
-                      className="relative border-b border-gray-300 grid grid-cols-8 py-2 group"
-                    >
-                      <div className="absolute left-0 transform -translate-x-full opacity-0 group-hover:opacity-100 flex items-center">
-                        <button
-                          className="flex w-8 h-8 items-center justify-center"
-                          onClick={() => {
-                            const nextLineItems = lineItems.filter(
-                              (_, idx) => idx !== index,
-                            );
-                            setLineItems(nextLineItems);
-                          }}
-                        >
-                          <Cross1Icon />
-                        </button>
-                        <div
-                          {...provided2.dragHandleProps}
-                          className="flex w-8 h-8 items-center justify-center"
-                        >
-                          <DragHandleHorizontalIcon />
+              {lineItems.map((lineItem, index) =>
+                lineItem ? (
+                  <Draggable
+                    key={index}
+                    draggableId={`item-${index}`}
+                    index={index}
+                  >
+                    {(provided2) => (
+                      <div
+                        ref={provided2.innerRef}
+                        {...provided2.draggableProps}
+                        key={index}
+                        className={`relative border-b border-gray-300 grid py-2 group`}
+                        style={{
+                          gridTemplateColumns: `${itemColSpan}fr${
+                            state.showQuantity ? ' 1fr' : ''
+                          }${state.showPrice ? ' 1fr' : ''}${
+                            state.showPrice ? ' 1fr' : ''
+                          } 1fr`,
+                        }}
+                      >
+                        <div className="absolute left-0 transform -translate-x-full opacity-0 group-hover:opacity-100 flex items-center">
+                          <button
+                            className="flex w-8 h-8 items-center justify-center"
+                            onClick={() => {
+                              const nextLineItems = lineItems.filter(
+                                (_, idx) => idx !== index,
+                              );
+                              setLineItems(nextLineItems);
+                            }}
+                          >
+                            <Cross1Icon />
+                          </button>
+                          <div
+                            {...provided2.dragHandleProps}
+                            className="flex w-8 h-8 items-center justify-center"
+                          >
+                            <DragHandleHorizontalIcon />
+                          </div>
+                        </div>
+                        <div>
+                          <Input
+                            className="font-normal text-sm"
+                            placeholder="Item name"
+                            value={lineItem.name}
+                            onChange={(e) => {
+                              const newLineItems = [...lineItems];
+                              newLineItems[index].name = e.target.value;
+                              setLineItems(newLineItems);
+                            }}
+                          />
+                          <TextArea
+                            className="font-light text-sm"
+                            placeholder="Describe your item (optional)"
+                            value={lineItem.description}
+                            rows={1}
+                            onChange={(e) => {
+                              const newLineItems = [...lineItems];
+                              newLineItems[index].description = e.target.value;
+                              setLineItems(newLineItems);
+                            }}
+                          />
+                        </div>
+                        {state.showQuantity && (
+                          <div className="flex items-center">
+                            <Input
+                              className="font-normal text-sm"
+                              placeholder="0"
+                              type="number"
+                              value={
+                                lineItem.quantity !== undefined
+                                  ? String(lineItem.quantity)
+                                  : ''
+                              }
+                              onChange={(e) => {
+                                const newLineItems = [...lineItems];
+                                if (e.target.value === '') {
+                                  newLineItems[index].quantity = undefined;
+                                  setLineItems(newLineItems);
+                                  return;
+                                }
+                                newLineItems[index].quantity = Number(
+                                  e.target.value,
+                                );
+                                setLineItems(newLineItems);
+                              }}
+                            />
+                          </div>
+                        )}
+                        {state.showPrice && (
+                          <div className="flex items-center">
+                            <Input
+                              className="font-normal text-sm"
+                              placeholder="0.00"
+                              type="number"
+                              value={
+                                lineItem.price !== undefined
+                                  ? String(lineItem.price)
+                                  : ''
+                              }
+                              onChange={(e) => {
+                                const newLineItems = [...lineItems];
+                                if (e.target.value === '') {
+                                  newLineItems[index].price = undefined;
+                                  setLineItems(newLineItems);
+                                  return;
+                                }
+                                newLineItems[index].price = Number(
+                                  e.target.value,
+                                );
+                                setLineItems(newLineItems);
+                              }}
+                            />
+                          </div>
+                        )}
+                        {state.showPrice && (
+                          <div className="flex items-center justify-end">
+                            <Input
+                              className="font-normal text-sm text-right"
+                              placeholder="Cost"
+                              type="number"
+                              value={
+                                lineItem.cost !== undefined
+                                  ? String(lineItem.cost)
+                                  : ''
+                              }
+                              onChange={(e) => {
+                                const newLineItems = [...lineItems];
+                                if (e.target.value === '') {
+                                  newLineItems[index].cost = undefined;
+                                  setLineItems(newLineItems);
+                                  return;
+                                }
+                                newLineItems[index].cost = Number(
+                                  e.target.value,
+                                );
+                                setLineItems(newLineItems);
+                              }}
+                            />
+                          </div>
+                        )}
+                        <div className="flex items-center justify-end">
+                          <Input
+                            className="font-normal text-sm text-right"
+                            placeholder="Amount"
+                            type="number"
+                            value={
+                              lineItem.price !== undefined &&
+                              lineItem.quantity !== undefined
+                                ? String(
+                                    (lineItem.price || 0) *
+                                      (lineItem.quantity || 0),
+                                  )
+                                : ''
+                            }
+                            onChange={(e) => {
+                              const newLineItems = [...lineItems];
+                              let qty = lineItem.quantity || 0;
+                              const val =
+                                e.target.value === ''
+                                  ? undefined
+                                  : Number(e.target.value);
+                              if (val !== undefined) {
+                                if (qty > 0) {
+                                  newLineItems[index].price = val / qty;
+                                } else {
+                                  newLineItems[index].quantity = 1;
+                                  newLineItems[index].price = val;
+                                }
+                              } else {
+                                newLineItems[index].price = undefined;
+                              }
+                              setLineItems(newLineItems);
+                            }}
+                          />
                         </div>
                       </div>
-                      <div className="col-span-5">
-                        <Input
-                          className="font-normal text-sm"
-                          placeholder="Item name"
-                          value={lineItem.name}
-                          onChange={(e) => {
-                            const newLineItems = [...lineItems];
-                            newLineItems[index].name = e.target.value;
-                            setLineItems(newLineItems);
-                          }}
-                        />
-                        <TextArea
-                          className="font-light text-sm"
-                          placeholder="Describe your item (optional)"
-                          value={lineItem.description}
-                          rows={1}
-                          onChange={(e) => {
-                            const newLineItems = [...lineItems];
-                            newLineItems[index].description = e.target.value;
-                            setLineItems(newLineItems);
-                          }}
-                        />
-                      </div>
-                      <div className="col-span-1 flex items-center">
-                        <Input
-                          className="font-normal text-sm"
-                          placeholder="0"
-                          type="number"
-                          value={lineItem.quantity as any}
-                          onChange={(e) => {
-                            const newLineItems = [...lineItems];
-                            if (e.target.value === '') {
-                              newLineItems[index].quantity = undefined;
-                              setLineItems(newLineItems);
-                              return;
-                            }
-                            newLineItems[index].quantity = Number(
-                              e.target.value,
-                            );
-                            setLineItems(newLineItems);
-                          }}
-                        />
-                      </div>
-                      <div className="col-span-1 flex items-center">
-                        <Input
-                          className="font-normal text-sm"
-                          placeholder="0.00"
-                          type="number"
-                          value={lineItem.price as any}
-                          onChange={(e) => {
-                            const newLineItems = [...lineItems];
-                            if (e.target.value === '') {
-                              newLineItems[index].price = undefined;
-                              setLineItems(newLineItems);
-                              return;
-                            }
-                            newLineItems[index].price = Number(e.target.value);
-                            setLineItems(newLineItems);
-                          }}
-                        />
-                      </div>
-                      <div className="col-span-1 flex items-center">
-                        <span className="font-normal text-sm">
-                          {formatAsCurrency(
-                            (lineItem.price || 0) * (lineItem.quantity || 0),
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
+                    )}
+                  </Draggable>
+                ) : null,
+              )}
               {provided.placeholder}
             </div>
           )}
@@ -667,6 +781,7 @@ const InvoiceItemsTable: React.FC = () => {
                     description: '',
                     quantity: 0,
                     price: 0,
+                    cost: 0,
                   },
                 ]);
               }}
@@ -675,19 +790,23 @@ const InvoiceItemsTable: React.FC = () => {
               <span>+</span>
             </button>
           </div>
-          <div className="col-span-1">
-            <span className="font-semibold text-sm uppercase tracking-wider">
-              Subtotal
-            </span>
-          </div>
-          <div className="col-span-1" />
-          <div className="col-span-1">
-            <span className="font-semibold text-sm">
-              {formatAsCurrency(subtotal)}
-            </span>
-          </div>
+          {state.showSubtotal && (
+            <>
+              <div className="col-span-1">
+                <span className="font-semibold text-sm uppercase tracking-wider">
+                  Subtotal
+                </span>
+              </div>
+              <div className="col-span-1" />
+              <div className="col-span-1 text-right">
+                <span className="font-semibold text-sm">
+                  {formatAsCurrency(subtotal)}
+                </span>
+              </div>
+            </>
+          )}
         </div>
-        {state.taxEnabled && (
+        {state.taxEnabled && state.showTax && (
           <div className="grid grid-cols-8 mt-4">
             <div className="col-span-5"></div>
             <div className="col-span-2 flex items-center">
@@ -716,8 +835,7 @@ const InvoiceItemsTable: React.FC = () => {
                 )
               </span>
             </div>
-            {/* <div className="col-span-1" /> */}
-            <div className="col-span-1">
+            <div className="col-span-1 text-right">
               <span className="font-semibold text-sm">
                 {formatAsCurrency(tax)}
               </span>
@@ -725,15 +843,15 @@ const InvoiceItemsTable: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-8 mt-4">
-          <div className="col-span-5"></div>
+        <div className="grid grid-cols-8 mt-2">
+          <div className="col-span-4"></div>
           <div className="col-span-1">
             <span className="font-semibold text-sm uppercase tracking-wider">
               Total
             </span>
           </div>
           <div className="col-span-1" />
-          <div className="col-span-1">
+          <div className="col-span-2 flex justify-end">
             <span className="font-semibold text-sm">
               {formatAsCurrency(total)}
             </span>
@@ -747,7 +865,7 @@ const InvoiceItemsTable: React.FC = () => {
 const AdditionalNotes: React.FC = () => {
   const { state, setState } = useAppStateStore();
   return (
-    <div className="border-t border-gray-300">
+    <div className="border-t border-gray-300 pt-35">
       <TextArea
         label={state.notesLabel}
         labelPlaceholder={'Notes'}

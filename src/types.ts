@@ -25,6 +25,10 @@ export type AppState = {
   notesLabel: string;
   notesFreeText: string;
   lineItems: InvoiceLineItem[];
+  showQuantity: boolean;
+  showPrice: boolean;
+  showSubtotal: boolean;
+  showTax: boolean;
 };
 
 export type InvoiceLineItem = {
@@ -32,4 +36,5 @@ export type InvoiceLineItem = {
   description: string;
   quantity?: number;
   price?: number;
+  cost?: number;
 };

@@ -38,6 +38,7 @@ const CURRENCIES = [
   { name: 'Brazilian Real', value: 'BRL' },
   { name: 'South African Rand', value: 'ZAR' },
   { name: 'Philippine Peso', value: 'PHP' },
+  { name: 'Mauritian Rupee', value: 'Rs' },
 ];
 
 export function CurrencySelector() {
