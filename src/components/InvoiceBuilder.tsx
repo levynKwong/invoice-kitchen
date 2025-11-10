@@ -290,6 +290,25 @@ const InvoiceBuilder = observer(() => {
 });
 
 const MainContent: React.FC = () => {
+  const { state, setState } = useAppStateStore();
+
+  // Compute the left column span to align title with Description column
+  const visibleColumns = [
+    true,
+    state.showQuantity,
+    state.showPrice,
+    state.showPrice,
+    true,
+  ].filter(Boolean);
+  const totalColumns = visibleColumns.length;
+  const itemColSpan = totalColumns === 1 ? 8 : Math.max(1, 8 - (totalColumns - 1));
+
+  // Determine invoice number from headerFields or fallback
+  const invoiceNumber =
+    state.headerFields?.find((h: any) => h.label?.toLowerCase().includes('invoice number'))?.value ||
+    state.headerFields?.find((h: any) => h.label?.toLowerCase().includes('number'))?.value ||
+    'No-07001';
+
   return (
     <div className="h-full w-full overflow-auto flex justify-center items-center bg-gray-100 pt-8 pb-8 print:pt-0 print:pb-0 print:overflow-hidden">
       <SidebarButton />
@@ -298,18 +317,36 @@ const MainContent: React.FC = () => {
       <HelpButton />
       <div
         id="invoice-page"
-        className="a4 shadow-lg print:shadow-none m-8 text-black flex flex-col gap-8"
+        className="a4 shadow-lg print:shadow-none m-8 text-black flex flex-col gap-2"
       >
         <Header />
         <div className="border-b border-gray-300" />
         <SubHeader />
+
+  {/* Title (INVOICE) and invoice number aligned above the descriptions */}
+  <div className="grid grid-cols-8 gap-4 mt-2 mb-6">
+          <div style={{ gridColumn: `span ${itemColSpan}` }}>
+            <Input
+              className="font-semibold text-2xl"
+              placeholder="Tax Invoice"
+              value={state.invoiceSubheader}
+              onChange={(e) => {
+                setState('invoiceSubheader', e.target.value);
+              }}
+            />
+          </div>
+          <div style={{ gridColumn: `span ${8 - itemColSpan}` }} className="flex items-start justify-end">
+            <span className="font-semibold text-sm text-right">{invoiceNumber}</span>
+          </div>
+        </div>
+
         <InvoiceItemsTable />
 
-                <footer className="w-full flex justify-center   pt-8 pb-8 " style={{ marginTop: '200px' }}>
-                    <div className="w-full max-w-4xl px-4">
-                        <AdditionalNotes />
-                    </div>
-                </footer>
+        <footer className="w-full flex justify-center" style={{ marginTop: '50px' }}>
+          <div className="w-full max-w-4xl">
+            <AdditionalNotes />
+          </div>
+        </footer>
       </div>
     </div>
   );
@@ -484,19 +521,10 @@ const SubHeader: React.FC = () => {
   const { state, setState } = useAppStateStore();
   return (
     <div className="grid grid-cols-4">
-      <div className="col-span-3">
-        <Input
-          className="font-semibold text-2xl"
-          placeholder="Tax Invoice"
-          value={state.invoiceSubheader}
-          onChange={(e) => {
-            setState('invoiceSubheader', e.target.value);
-          }}
-        />
+      <div className="col-span-4">
         <TextArea
-          className="font-normal text-sm"
-          placeholder={`(Customer Name)
-(Customer Address)`}
+          className="font-normal text-sm mt-2"
+          placeholder={`(Customer Name)\n(Customer Address)`}
           value={state.invoiceSubheaderFreeText}
           onChange={(e) => {
             setState('invoiceSubheaderFreeText', e.target.value);
@@ -558,7 +586,7 @@ const InvoiceItemsTable: React.FC = () => {
           }}
         >
           <span className="uppercase tracking-wider font-semibold text-sm">
-            Item
+            Description
           </span>
           {state.showQuantity && (
             <span className="uppercase tracking-wider font-semibold text-sm">
@@ -576,7 +604,7 @@ const InvoiceItemsTable: React.FC = () => {
             </span>
           )}
           <span className="uppercase tracking-wider font-semibold text-sm ">
-            Amount
+            Amount(RS)
           </span>
         </div>
         <Droppable droppableId="invoice-items">
